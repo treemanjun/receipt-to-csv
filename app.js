@@ -36,6 +36,81 @@ retryButton.addEventListener('click', () => {
     capturedImageData = null;
 });
 
+// 画像前処理関数（コントラスト強化）
+function preprocessImage(imageData) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            canvas.width = img.width;
+            canvas.height = img.height;
+
+            // 画像を描画
+            ctx.drawImage(img, 0, 0);
+
+            // ピクセルデータを取得
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+
+            // コントラスト強化（グレースケール化 + 二値化）
+            for (let i = 0; i < data.length; i += 4) {
+                const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
+                const value = avg > 128 ? 255 : 0; // 二値化
+                data[i] = data[i + 1] = data[i + 2] = value;
+            }
+
+            ctx.putImageData(imageData, 0, 0);
+            resolve(canvas.toDataURL());
+        };
+        img.src = imageData;
+    });
+}
+
+// OCR処理関数
+async function startOCRProcessing() {
+    cameraSection.style.display = 'none';
+    processingSection.style.display = 'block';
+
+    try {
+        console.log('OCR処理開始...');
+
+        // 画像の前処理（コントラスト強化）
+        const processedImage = await preprocessImage(capturedImageData);
+
+        // Tesseract.jsでOCR実行
+        const result = await Tesseract.recognize(
+            processedImage,
+            'jpn+eng', // 日本語と英語の両方認識
+            {
+                logger: (m) => {
+                    if (m.status === 'recognizing text') {
+                        console.log(`処理中: ${Math.round(m.progress * 100)}%`);
+                    }
+                },
+                tessedit_pageseg_mode: Tesseract.PSM.SINGLE_BLOCK,
+                preserve_interword_spaces: '1'
+            }
+        );
+
+        const ocrText = result.data.text;
+        console.log('OCR結果:', ocrText);
+
+        alert('OCR完了！\n\n抽出されたテキスト:\n' + ocrText.substring(0, 300) + '...');
+
+        processingSection.style.display = 'none';
+        cameraSection.style.display = 'block';
+
+    } catch (error) {
+        console.error('OCRエラー:', error);
+        alert('OCR処理中にエラーが発生しました: ' + error.message);
+
+        processingSection.style.display = 'none';
+        cameraSection.style.display = 'block';
+    }
+}
+
 // この画像を使うボタン
 processButton.addEventListener('click', async () => {
     if (!capturedImageData) {
@@ -43,45 +118,7 @@ processButton.addEventListener('click', async () => {
         return;
     }
 
-    // 処理中画面を表示
-    cameraSection.style.display = 'none';
-    processingSection.style.display = 'block';
-
-    try {
-        // Tesseract.jsでOCR処理を実行
-        console.log('OCR処理を開始します...');
-
-        const result = await Tesseract.recognize(
-            capturedImageData,
-            'jpn+eng', // 日本語と英語に対応
-            {
-                logger: (m) => {
-                    // 進捗状況をコンソールに表示
-                    if (m.status === 'recognizing text') {
-                        console.log(`OCR進捗: ${Math.round(m.progress * 100)}%`);
-                    }
-                }
-            }
-        );
-
-        console.log('OCR処理完了！');
-        console.log('認識されたテキスト:', result.data.text);
-
-        // 次のフェーズでデータ編集画面に遷移
-        alert('OCR処理が完了しました！\n\n認識されたテキスト:\n' + result.data.text.substring(0, 200));
-
-        // 一旦カメラ画面に戻る（次のフェーズでデータ編集画面を実装）
-        processingSection.style.display = 'none';
-        cameraSection.style.display = 'block';
-
-    } catch (error) {
-        console.error('OCR処理エラー:', error);
-        alert('OCR処理中にエラーが発生しました: ' + error.message);
-
-        // エラー時はカメラ画面に戻る
-        processingSection.style.display = 'none';
-        cameraSection.style.display = 'block';
-    }
+    await startOCRProcessing();
 });
 
 // ページ読み込み時の初期化
