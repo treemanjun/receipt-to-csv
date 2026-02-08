@@ -68,6 +68,35 @@ function preprocessImage(imageData) {
     });
 }
 
+// OCRテキスト補正関数
+function correctOCRText(text) {
+    // 丸囲み数字を通常数字に変換
+    const circledNumbers = {
+        '①': '1', '②': '2', '③': '3', '④': '4', '⑤': '5',
+        '⑥': '6', '⑦': '7', '⑧': '8', '⑨': '9', '⑩': '10',
+        '⓪': '0'
+    };
+
+    for (const [circled, normal] of Object.entries(circledNumbers)) {
+        text = text.replaceAll(circled, normal);
+    }
+
+    // 全角数字を半角に変換
+    text = text.replace(/[０-９]/g, (s) => {
+        return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
+    });
+
+    // 全角英字を半角に変換
+    text = text.replace(/[Ａ-Ｚａ-ｚ]/g, (s) => {
+        return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
+    });
+
+    // 連続する空白を1つに
+    text = text.replace(/\s+/g, ' ');
+
+    return text;
+}
+
 // OCR処理関数
 async function startOCRProcessing() {
     cameraSection.style.display = 'none';
@@ -76,13 +105,11 @@ async function startOCRProcessing() {
     try {
         console.log('OCR処理開始...');
 
-        // 画像の前処理（コントラスト強化）
         const processedImage = await preprocessImage(capturedImageData);
 
-        // Tesseract.jsでOCR実行
         const result = await Tesseract.recognize(
             processedImage,
-            'jpn+eng', // 日本語と英語の両方認識
+            'jpn', // 日本語特化
             {
                 logger: (m) => {
                     if (m.status === 'recognizing text') {
@@ -94,8 +121,11 @@ async function startOCRProcessing() {
             }
         );
 
-        const ocrText = result.data.text;
-        console.log('OCR結果:', ocrText);
+        // OCR結果を取得して補正
+        let ocrText = result.data.text;
+        ocrText = correctOCRText(ocrText);
+
+        console.log('OCR結果（補正後）:', ocrText);
 
         alert('OCR完了！\n\n抽出されたテキスト:\n' + ocrText.substring(0, 300) + '...');
 
