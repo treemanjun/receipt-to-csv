@@ -36,7 +36,7 @@ retryButton.addEventListener('click', () => {
     capturedImageData = null;
 });
 
-// 画像前処理関数（コントラスト強化）
+// 強化された画像前処理関数
 function preprocessImage(imageData) {
     return new Promise((resolve) => {
         const img = new Image();
@@ -44,21 +44,34 @@ function preprocessImage(imageData) {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
 
-            canvas.width = img.width;
-            canvas.height = img.height;
+            // 画像を2倍にスケールアップ（OCR精度向上）
+            const scale = 2;
+            canvas.width = img.width * scale;
+            canvas.height = img.height * scale;
 
-            // 画像を描画
-            ctx.drawImage(img, 0, 0);
+            // スムージングを無効化（シャープに）
+            ctx.imageSmoothingEnabled = false;
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-            // ピクセルデータを取得
+            // ピクセルデータ取得
             const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
             const data = imageData.data;
 
-            // コントラスト強化（グレースケール化 + 二値化）
+            // グレースケール化 + コントラスト強化
             for (let i = 0; i < data.length; i += 4) {
-                const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
-                const value = avg > 128 ? 255 : 0; // 二値化
-                data[i] = data[i + 1] = data[i + 2] = value;
+                // グレースケール変換
+                const gray = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
+
+                // コントラスト強化（シグモイド関数）
+                const contrast = 1.5; // コントラスト係数
+                const factor = (259 * (contrast + 255)) / (255 * (259 - contrast));
+                let enhanced = factor * (gray - 128) + 128;
+
+                // 適応的二値化（より明確な白黒）
+                const threshold = 140;
+                enhanced = enhanced > threshold ? 255 : 0;
+
+                data[i] = data[i + 1] = data[i + 2] = enhanced;
             }
 
             ctx.putImageData(imageData, 0, 0);
@@ -109,7 +122,7 @@ async function startOCRProcessing() {
 
         const result = await Tesseract.recognize(
             processedImage,
-            'jpn', // 日本語特化
+            'jpn',
             {
                 logger: (m) => {
                     if (m.status === 'recognizing text') {
@@ -117,6 +130,7 @@ async function startOCRProcessing() {
                     }
                 },
                 tessedit_pageseg_mode: Tesseract.PSM.SINGLE_BLOCK,
+                tessedit_ocr_engine_mode: Tesseract.OEM.LSTM_ONLY, // 最新のLSTMエンジン
                 preserve_interword_spaces: '1'
             }
         );

@@ -60,6 +60,43 @@ main {
     color: #666;
 }
 
+/* 撮影ガイド */
+.tips-box {
+    background: #f8f9fa;
+    border-left: 4px solid #667eea;
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 4px;
+}
+
+.tips-box h3 {
+    font-size: 14px;
+    margin-bottom: 10px;
+    color: #667eea;
+}
+
+.tips-box ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.tips-box li {
+    font-size: 13px;
+    color: #666;
+    padding: 4px 0;
+    padding-left: 20px;
+    position: relative;
+}
+
+.tips-box li:before {
+    content: "✓";
+    position: absolute;
+    left: 0;
+    color: #667eea;
+    font-weight: bold;
+}
+
 /* カメラ入力（非表示） */
 #camera-input {
     display: none;
