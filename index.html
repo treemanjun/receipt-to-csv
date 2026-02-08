@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>レシートCSV変換 - Red Farm</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📸 レシートCSV変換</h1>
+            <p>レシートを撮影してfreee用CSVを作成</p>
+        </header>
+
+        <main>
+            <!-- ステップ1: カメラ撮影 -->
+            <section id="camera-section" class="section">
+                <h2>📷 レシートを撮影</h2>
+                <input type="file" id="camera-input" accept="image/*" capture="environment">
+                <label for="camera-input" class="camera-button">
+                    カメラで撮影
+                </label>
+                
+                <!-- 撮影した画像のプレビュー -->
+                <div id="preview-area" style="display: none;">
+                    <h3>撮影した画像</h3>
+                    <img id="preview-image" alt="レシートプレビュー">
+                    <button id="retry-button" class="secondary-button">撮り直す</button>
+                    <button id="process-button" class="primary-button">この画像を使う</button>
+                </div>
+            </section>
+
+            <!-- ステップ2: OCR処理中（次のフェーズで実装） -->
+            <section id="processing-section" class="section" style="display: none;">
+                <h2>⏳ 処理中...</h2>
+                <div class="loader"></div>
+                <p>レシートを読み取っています</p>
+            </section>
+
+            <!-- ステップ3: データ編集（次のフェーズで実装） -->
+            <section id="edit-section" class="section" style="display: none;">
+                <h2>✏️ データ編集</h2>
+                <!-- フォームは後で追加 -->
+            </section>
+        </main>
+
+        <footer>
+            <p>Red Farm Christian Health - 経理ツール</p>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
